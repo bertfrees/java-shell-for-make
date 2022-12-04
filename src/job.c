@@ -35,7 +35,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 const char *default_shell = "sh.exe";
 int no_default_sh_exe = 1;
-int batch_mode_shell = 1;
+int batch_mode_shell = 0;
 HANDLE main_thread;
 
 #elif defined (_AMIGA)

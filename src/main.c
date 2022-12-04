@@ -1068,7 +1068,7 @@ main (int argc, char **argv, char **envp)
   SetUnhandledExceptionFilter (handle_runtime_exceptions);
 
   /* start off assuming we have no shell */
-  unixy_shell = 0;
+  unixy_shell = 1;
   no_default_sh_exe = 1;
 #endif
 
