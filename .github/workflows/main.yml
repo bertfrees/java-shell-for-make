@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '8'
+      - name: Install GNU Make and mingw-w64
+        run: |
+          brew update
+          brew install make
+          brew install mingw-w64
+      - name: Build tarball
+        run: gmake tarball
+      - name: Upload tarball
+        uses: actions/upload-artifact@v3
+        with:
+          path: java-shell-for-make.tar.gz
