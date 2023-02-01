@@ -13,6 +13,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Files;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.HashMap;
@@ -322,5 +330,47 @@ public class util {
 	public static String xpath(File file, String expression) throws FileNotFoundException, XPathExpressionException {
 		return XPathFactory.newInstance().newXPath().compile(expression)
 			.evaluate(new InputSource(new FileInputStream(file)));
+	}
+
+	public static List<File> glob(String pattern) throws IOException {
+		return glob(Paths.get("."), pattern);
+	}
+
+	public static List<File> glob(File cd, String pattern) throws IOException {
+		return glob(cd.toPath(), pattern);
+	}
+
+	public static List<File> glob(Path cd, String pattern) throws IOException {
+		cd = cd.toFile().getCanonicalFile().toPath();
+		Path base = cd;
+		String prefix = "";
+		List<File> list = new ArrayList<>();
+		if (pattern.startsWith("/")) {
+			base = Paths.get("/");
+			prefix = "/";
+		} else {
+			while (pattern.startsWith("../")) {
+				base = base.getParent();
+				pattern = pattern.substring(3);
+				prefix += "../";
+			}
+			pattern = base + "/" + pattern;
+		}
+		int cut = base.toFile().getPath().equals("/") ? 1 : base.toFile().getPath().length() + 1;
+		final String fPrefix = prefix;
+		PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+		Files.walkFileTree(base, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+				if (pathMatcher.matches(path))
+					list.add(new File(fPrefix + path.toFile().getPath().substring(cut)));
+				return FileVisitResult.CONTINUE;
+			}
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+				return FileVisitResult.CONTINUE;
+			}
+		});
+		return list;
 	}
 }
