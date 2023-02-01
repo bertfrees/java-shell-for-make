@@ -41,7 +41,13 @@ public class eval_java {
 			File classFile = new File(classesDir, className + ".class");
 			List<File> classPath = new ArrayList<>(); {
 				classPath.add(thisExecutable.getParentFile());
-				classPath.add(classesDir); }
+				classPath.add(classesDir);
+				String fromEnv = System.getenv("CLASSPATH");
+				if (fromEnv != null)
+					for (String p : fromEnv.split("\\s+")) {
+						File f = new File(p);
+						if (f.exists())
+							classPath.add(f); }}
 			if (!classFile.exists()) {
 				File javaFile = new File(javaDir, className + ".java");
 				javaFile.getParentFile().mkdirs();
