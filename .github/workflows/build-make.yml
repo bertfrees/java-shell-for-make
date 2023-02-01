@@ -1,0 +1,21 @@
+name: Build make.exe
+
+on:
+  push:
+    branches: [ build-make ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build make.exe with Visual Studio
+      shell: cmd
+      run: |
+        call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Community\VC\Auxiliary\Build\vcvarsall.bat x86
+        call build_w32.bat --without-guile
+    - name: Upload make.exe
+      uses: actions/upload-artifact@v3
+      with:
+        name: "make.exe"
+        path: WinRel/gnumake.exe
