@@ -181,44 +181,39 @@ public class util {
 		}
 	}
 
-	public static void exec(File cd, String... cmd) throws IOException, InterruptedException {
-		int rv = new ProcessBuilder(cmd).directory(cd)
-		                                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-		                                .redirectError(ProcessBuilder.Redirect.INHERIT)
-		                                .start()
-		                                .waitFor();
-		System.out.flush();
-		System.err.flush();
-		System.exit(rv);
-	}
-
 	public static void exec(String... cmd) throws IOException, InterruptedException {
-		int rv = new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.INHERIT)
-		                                .redirectError(ProcessBuilder.Redirect.INHERIT)
-		                                .start()
-		                                .waitFor();
-		System.out.flush();
-		System.err.flush();
-		System.exit(rv);
+		exec(null, null, cmd);
 	}
 
 	public static void exec(List<String> cmd) throws IOException, InterruptedException {
-		int rv = new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.INHERIT)
-		                                .redirectError(ProcessBuilder.Redirect.INHERIT)
-		                                .start()
-		                                .waitFor();
-		System.out.flush();
-		System.err.flush();
-		System.exit(rv);
+		exec(null, null, cmd.toArray(new String[cmd.size()]));
+	}
+
+	public static void exec(File cd, String... cmd) throws IOException, InterruptedException {
+		exec(cd, null, cmd);
+	}
+
+	public static void exec(File cd, List<String> cmd) throws IOException, InterruptedException {
+		exec(cd, null, cmd.toArray(new String[cmd.size()]));
 	}
 
 	public static void exec(Map<String,String> env, String... cmd) throws IOException, InterruptedException {
-		ProcessBuilder pb = new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.INHERIT)
-		                                           .redirectError(ProcessBuilder.Redirect.INHERIT);
+		exec(null, env, cmd);
+	}
+
+	public static void exec(File cd, Map<String,String> env, List<String> cmd) throws IOException, InterruptedException {
+		exec(cd, env, cmd.toArray(new String[cmd.size()]));
+	}
+
+	public static void exec(File cd, Map<String,String> env, String... cmd) throws IOException, InterruptedException {
+		ProcessBuilder b = new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.INHERIT)
+		                                          .redirectError(ProcessBuilder.Redirect.INHERIT);
+		if (cd != null)
+			b = b.directory(cd);
 		if (env != null)
 			for (String v : env.keySet())
-				pb.environment().put(v, env.get(v));
-		int rv = pb.start().waitFor();
+				b.environment().put(v, env.get(v));
+		int rv = b.start().waitFor();
 		System.out.flush();
 		System.err.flush();
 		System.exit(rv);
@@ -240,8 +235,38 @@ public class util {
 		return env;
 	}
 
-	public static int captureOutput(List<String> cmd, Consumer<String> collect) throws IOException, InterruptedException {
-		Process p = new ProcessBuilder(cmd).redirectError(ProcessBuilder.Redirect.INHERIT).start();
+	public static int captureOutput(Consumer<String> collect, String... cmd) throws IOException, InterruptedException {
+		return captureOutput(collect, null, null, cmd);
+	}
+
+	public static int captureOutput(Consumer<String> collect, List<String> cmd) throws IOException, InterruptedException {
+		return captureOutput(collect, null, null, cmd.toArray(new String[cmd.size()]));
+	}
+
+	public static int captureOutput(Consumer<String> collect, File cd, String... cmd) throws IOException, InterruptedException {
+		return captureOutput(collect, cd, null, cmd);
+	}
+
+	public static int captureOutput(Consumer<String> collect, File cd, List<String> cmd) throws IOException, InterruptedException {
+		return captureOutput(collect, cd, null, cmd.toArray(new String[cmd.size()]));
+	}
+
+	public static int captureOutput(Consumer<String> collect, Map<String,String> env, String... cmd) throws IOException, InterruptedException {
+		return captureOutput(collect, null, env, cmd);
+	}
+
+	public static int captureOutput(Consumer<String> collect, File cd, Map<String,String> env, List<String> cmd) throws IOException, InterruptedException {
+		return captureOutput(collect, cd, env, cmd.toArray(new String[cmd.size()]));
+	}
+
+	public static int captureOutput(Consumer<String> collect, File cd, Map<String,String> env, String... cmd) throws IOException, InterruptedException {
+		ProcessBuilder b = new ProcessBuilder(cmd).redirectError(ProcessBuilder.Redirect.INHERIT);
+		if (cd != null)
+			b = b.directory(cd);
+		if (env != null)
+			for (String v : env.keySet())
+				b.environment().put(v, env.get(v));
+		Process p = b.start();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
 		String line;
 		while ((line = reader.readLine()) != null)
