@@ -23,17 +23,24 @@ public class eval_java {
 		if ("true".equals(System.getenv("ECHO")))
 			System.err.println(javaCode);
 		try {
-			javaCode =
-				"import java.io.*;\n"
-				+ "import static java.lang.System.err;\n"
-				+ "import java.net.*;\n"
-				+ "import java.nio.file.*;\n"
-				+ "import java.util.*;\n"
-				+ "import static lib.util.*;\n\n"
-				+ "public class [CLASSNAME] {\n\n"
-				+ "public static void main(String args[]) throws Throwable {\n\n"
-				+ Pattern.compile(" *\\\\$", Pattern.MULTILINE).matcher(javaCode).replaceAll("") + "\n\n"
-				+ "}\n}\n";
+			List<String> imports = new ArrayList<>(); {
+				imports.add("java.io.*");
+				imports.add("static java.lang.System.err");
+				imports.add("java.net.*");
+				imports.add("java.nio.file.*");
+				imports.add("java.util.*");
+				imports.add("static lib.util.*");
+				String fromEnv = System.getenv("IMPORTS");
+				if (fromEnv != null)
+					for (String i : fromEnv.split("\\s+"))
+						imports.add(i); }
+			javaCode = Pattern.compile(" *\\\\$", Pattern.MULTILINE).matcher(javaCode).replaceAll("");
+			javaCode = String.format(
+				"%s\n\n" +
+				"public class [CLASSNAME] {\n\n" +
+				"public static void main(String args[]) throws Throwable {\n\n%s\n\n}\n}\n",
+				"import " + String.join(";\nimport ", imports) + ";",
+				javaCode);
 			String className = "recipe_" + md5(javaCode);
 			javaCode = javaCode.replace("[CLASSNAME]", className);
 			File javaDir = new File(thisExecutable.getParentFile(), "recipes/java");
