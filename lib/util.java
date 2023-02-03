@@ -104,7 +104,10 @@ public class util {
 	}
 
 	public static void rm(File fileOrDirectory) {
-		if (fileOrDirectory.exists()) {
+		if (Files.isSymbolicLink(fileOrDirectory.toPath())) {
+			if (!fileOrDirectory.delete())
+				throw new RuntimeException("could not delete file: " + fileOrDirectory);
+		} else if (fileOrDirectory.exists()) {
 			if (fileOrDirectory.isDirectory())
 				for (File f : fileOrDirectory.listFiles())
 					rm(f);
@@ -116,24 +119,31 @@ public class util {
 	public static void mv(String src, String dest) throws IOException {
 		File srcFile = new File(src);
 		File destFile = new File(dest);
-		if (dest.endsWith("/") && !destFile.isDirectory()) {
-			if (destFile.exists())
+		if (dest.endsWith("/"))
+			if (Files.isSymbolicLink(destFile.toPath())) {
 				System.err.println("file is not a directory: " + destFile);
-			else
-				System.err.println("directory does not exist: " + destFile);
-			exit(1);
-		}
+				exit(1);
+			} else if (!destFile.isDirectory()) {
+				if (destFile.exists())
+					System.err.println("file is not a directory: " + destFile);
+				else
+					System.err.println("directory does not exist: " + destFile);
+				exit(1);
+			}
 		mv(srcFile, destFile);
 	}
 
 	public static void mv(File src, File dest) throws IOException {
-		if (!src.exists()) {
+		if (!(Files.isSymbolicLink(src.toPath()) || src.exists())) {
 			System.err.println("file does not exist: " + src);
 			exit(1);
 		}
-		if (dest.isDirectory())
+		if (Files.isSymbolicLink(dest.toPath())) {
+			System.err.println("file exists: " + dest);
+			exit(1);
+		} else if (dest.isDirectory())
 			dest = new File(dest, src.getName());
-		if (dest.exists()) {
+		if (Files.isSymbolicLink(dest.toPath()) || dest.exists()) {
 			System.err.println("file exists: " + dest);
 			exit(1);
 		}
@@ -141,7 +151,10 @@ public class util {
 			System.err.println("directory does not exist: " + dest.getCanonicalFile().getParentFile());
 			exit(1);
 		}
-		if (src.isDirectory()) {
+		if (Files.isSymbolicLink(src.toPath())) {
+			if (!src.renameTo(dest))
+				throw new RuntimeException("could not rename file: " + src + " -> " + dest);
+		} else if (src.isDirectory()) {
 			dest.mkdirs();
 			for (File f : src.listFiles())
 				mv(f, dest);
@@ -170,28 +183,34 @@ public class util {
 	public static void copy(String src, String dest) throws FileNotFoundException, IOException {
 		File srcFile = new File(src);
 		File destFile = new File(dest);
-		if (dest.endsWith("/") && !destFile.isDirectory()) {
-			if (destFile.exists())
+		if (dest.endsWith("/"))
+			if (Files.isSymbolicLink(destFile.toPath())) {
 				System.err.println("file is not a directory: " + destFile);
-			else
-				System.err.println("directory does not exist: " + destFile);
-			exit(1);
-		}
+				exit(1);
+			} else if (!destFile.isDirectory()) {
+				if (destFile.exists())
+					System.err.println("file is not a directory: " + destFile);
+				else
+					System.err.println("directory does not exist: " + destFile);
+				exit(1);
+			}
 		copy(srcFile, destFile);
 	}
 
 	public static void copy(File src, File dest) throws FileNotFoundException, IOException {
-		if (!src.exists()) {
+		if (!(Files.isSymbolicLink(src.toPath()) || src.exists())) {
 			System.err.println("file does not exist: " + src);
 			exit(1);
-		}
-		if (src.isDirectory()) {
+		} else if (src.isDirectory()) {
 			System.err.println("file is a directory: " + src);
 			exit(1);
 		}
-		if (dest.isDirectory())
+		if (Files.isSymbolicLink(dest.toPath())) {
+			System.err.println("file exists: " + dest);
+			exit(1);
+		} else if (dest.isDirectory())
 			dest = new File(dest, src.getName());
-		if (dest.exists()) {
+		if (Files.isSymbolicLink(dest.toPath()) || dest.exists()) {
 			System.err.println("file exists: " + dest);
 			exit(1);
 		}
@@ -206,7 +225,7 @@ public class util {
 	}
 
 	public static void copy(URL url, File file) throws FileNotFoundException, IOException {
-		if (file.exists()) {
+		if (Files.isSymbolicLink(file.toPath()) || file.exists()) {
 			System.err.println("file exists: " + file);
 			exit(1);
 		}
@@ -228,7 +247,10 @@ public class util {
 	}
 
 	public static void write(File file, String string) throws IOException {
-		if (file.isDirectory()) {
+		if (Files.isSymbolicLink(file.toPath())) {
+			System.err.println("file is a symbolic link: " + file);
+			exit(1);
+		} else if (file.isDirectory()) {
 			System.err.println("file is a directory: " + file);
 			exit(1);
 		}
@@ -244,18 +266,21 @@ public class util {
 	}
 
 	public static void unzip(File zipFile, File directory) throws IOException {
-		if (!directory.isDirectory()) {
+		if (Files.isSymbolicLink(directory.toPath())) {
+			System.err.println("file is not a directory: " + directory);
+			exit(1);
+		} else if (!directory.isDirectory()) {
 			if (directory.exists())
-				System.err.println("file is not a directory: " + directory);
-			else
-				System.err.println("directory does not exist: " + directory);
+					System.err.println("file is not a directory: " + directory);
+				else
+					System.err.println("directory does not exist: " + directory);
 			exit(1);
 		}
 		try (ZipInputStream zip = new ZipInputStream(new FileInputStream(zipFile))) {
 			ZipEntry entry;
 			while ((entry = zip.getNextEntry()) != null) {
 				File destFile = new File(directory, entry.getName());
-				if (destFile.exists()) {
+				if (Files.isSymbolicLink(destFile.toPath()) || destFile.exists()) {
 					System.err.println("file exists: " + destFile);
 					exit(1);
 				}
