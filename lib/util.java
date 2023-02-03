@@ -113,6 +113,44 @@ public class util {
 		}
 	}
 
+	public static void mv(String src, String dest) throws IOException {
+		File srcFile = new File(src);
+		File destFile = new File(dest);
+		if (dest.endsWith("/") && !destFile.isDirectory()) {
+			if (destFile.exists())
+				System.err.println("file is not a directory: " + destFile);
+			else
+				System.err.println("directory does not exist: " + destFile);
+			exit(1);
+		}
+		mv(srcFile, destFile);
+	}
+
+	public static void mv(File src, File dest) throws IOException {
+		if (!src.exists()) {
+			System.err.println("file does not exist: " + src);
+			exit(1);
+		}
+		if (dest.isDirectory())
+			dest = new File(dest, src.getName());
+		if (dest.exists()) {
+			System.err.println("file exists: " + dest);
+			exit(1);
+		}
+		if (!dest.getCanonicalFile().getParentFile().isDirectory()) {
+			System.err.println("directory does not exist: " + dest.getCanonicalFile().getParentFile());
+			exit(1);
+		}
+		if (src.isDirectory()) {
+			dest.mkdirs();
+			for (File f : src.listFiles())
+				mv(f, dest);
+			if (!src.delete())
+				throw new RuntimeException("could not delete file: " + src); }
+		else if (!src.renameTo(dest))
+			throw new RuntimeException("could not rename file: " + src + " -> " + dest);
+	}
+
 	public static void cp(String src, String dest) throws FileNotFoundException, IOException {
 		copy(src, dest);
 	}
