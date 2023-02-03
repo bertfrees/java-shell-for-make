@@ -108,7 +108,8 @@ public class util {
 			if (fileOrDirectory.isDirectory())
 				for (File f : fileOrDirectory.listFiles())
 					rm(f);
-			fileOrDirectory.delete();
+			if (!fileOrDirectory.delete())
+				throw new RuntimeException("could not delete file: " + fileOrDirectory);
 		}
 	}
 
@@ -131,16 +132,35 @@ public class util {
 	public static void copy(String src, String dest) throws FileNotFoundException, IOException {
 		File srcFile = new File(src);
 		File destFile = new File(dest);
-		if (!destFile.exists() && dest.endsWith("/")) {
-			destFile.mkdirs();
-			destFile = new File(destFile, srcFile.getName());
+		if (dest.endsWith("/") && !destFile.isDirectory()) {
+			if (destFile.exists())
+				System.err.println("file is not a directory: " + destFile);
+			else
+				System.err.println("directory does not exist: " + destFile);
+			exit(1);
 		}
 		copy(srcFile, destFile);
 	}
 
 	public static void copy(File src, File dest) throws FileNotFoundException, IOException {
+		if (!src.exists()) {
+			System.err.println("file does not exist: " + src);
+			exit(1);
+		}
+		if (src.isDirectory()) {
+			System.err.println("file is a directory: " + src);
+			exit(1);
+		}
 		if (dest.isDirectory())
 			dest = new File(dest, src.getName());
+		if (dest.exists()) {
+			System.err.println("file exists: " + dest);
+			exit(1);
+		}
+		if (!dest.getCanonicalFile().getParentFile().isDirectory()) {
+			System.err.println("directory does not exist: " + dest.getCanonicalFile().getParentFile());
+			exit(1);
+		}
 		try (InputStream is = new FileInputStream(src);
 		     OutputStream os = new FileOutputStream(dest)) {
 			copy(is, os);
@@ -148,6 +168,14 @@ public class util {
 	}
 
 	public static void copy(URL url, File file) throws FileNotFoundException, IOException {
+		if (file.exists()) {
+			System.err.println("file exists: " + file);
+			exit(1);
+		}
+		if (!file.getCanonicalFile().getParentFile().isDirectory()) {
+			System.err.println("directory does not exist: " + file.getCanonicalFile().getParentFile());
+			exit(1);
+		}
 		try (InputStream is = new BufferedInputStream(url.openStream());
 		     OutputStream os = new FileOutputStream(file)) {
 			copy(is, os);
@@ -162,6 +190,14 @@ public class util {
 	}
 
 	public static void write(File file, String string) throws IOException {
+		if (file.isDirectory()) {
+			System.err.println("file is a directory: " + file);
+			exit(1);
+		}
+		if (!file.getCanonicalFile().getParentFile().isDirectory()) {
+			System.err.println("directory does not exist: " + file.getCanonicalFile().getParentFile());
+			exit(1);
+		}
 		try (OutputStream os = new FileOutputStream(file, true)) {
 			os.write(string.getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
@@ -170,10 +206,21 @@ public class util {
 	}
 
 	public static void unzip(File zipFile, File directory) throws IOException {
+		if (!directory.isDirectory()) {
+			if (directory.exists())
+				System.err.println("file is not a directory: " + directory);
+			else
+				System.err.println("directory does not exist: " + directory);
+			exit(1);
+		}
 		try (ZipInputStream zip = new ZipInputStream(new FileInputStream(zipFile))) {
 			ZipEntry entry;
 			while ((entry = zip.getNextEntry()) != null) {
 				File destFile = new File(directory, entry.getName());
+				if (destFile.exists()) {
+					System.err.println("file exists: " + destFile);
+					exit(1);
+				}
 				if (!entry.isDirectory()) {
 					destFile.getParentFile().mkdirs();
 					try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(destFile))) {
