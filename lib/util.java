@@ -324,7 +324,8 @@ public class util {
 	}
 
 	public static void exec(File cd, Map<String,String> env, String... cmd) throws IOException, InterruptedException {
-		ProcessBuilder b = new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.INHERIT)
+		ProcessBuilder b = new ProcessBuilder(cmd).redirectInput(ProcessBuilder.Redirect.INHERIT)
+		                                          .redirectOutput(ProcessBuilder.Redirect.INHERIT)
 		                                          .redirectError(ProcessBuilder.Redirect.INHERIT);
 		if (cd != null)
 			b = b.directory(cd);

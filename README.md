@@ -23,6 +23,12 @@ hello :
    [`make.exe`](https://github.com/bertfrees/java-shell-for-make/releases/download/make-4.3-p1/make.exe)
    executable needed to execute your `Makefile`.
 
+## Build
+
+To build a tarball, run:
+
+    make dist
+
 ## License
 
 Copyright © 2022-2023 Bert Frees
