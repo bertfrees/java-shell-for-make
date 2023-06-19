@@ -280,11 +280,11 @@ public class util {
 			ZipEntry entry;
 			while ((entry = zip.getNextEntry()) != null) {
 				File destFile = new File(directory, entry.getName());
-				if (Files.isSymbolicLink(destFile.toPath()) || destFile.exists()) {
-					System.err.println("file exists: " + destFile);
-					exit(1);
-				}
 				if (!entry.isDirectory()) {
+					if (Files.isSymbolicLink(destFile.toPath()) || destFile.exists()) {
+						System.err.println("file exists: " + destFile);
+						exit(1);
+					}
 					destFile.getParentFile().mkdirs();
 					try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(destFile))) {
 						byte[] bytes = new byte[1024];
