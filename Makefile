@@ -44,15 +44,10 @@ $(TARBALL) : enable-java-shell.mk eval-java eval-java.exe eval_java.class lib/ut
 	exec(cmd);
 
 .PHONY : update-bootstrap
-update-bootstrap : enable-java-shell.mk eval-java eval-java.exe eval_java.class lib/util.class lib/util$$OS.class lib/util$$1.class .gitignore
-	cp(".gitignore", "bootstrap/");             \
-	cp("enable-java-shell.mk", "bootstrap/");   \
-	cp("eval-java", "bootstrap/");              \
-	cp("eval-java.exe", "bootstrap/");          \
-	cp("eval_java.class", "bootstrap/");        \
-	cp("lib/util.class", "bootstrap/lib/");     \
-	cp("lib/util$$OS.class", "bootstrap/lib/"); \
-	cp("lib/util$$1.class", "bootstrap/lib/");
+update-bootstrap : $(TARBALL)
+	rm("bootstrap");                              \
+	mkdirs("bootstrap");                          \
+	exec("tar", "-xzf", "$<", "-C", "bootstrap");
 
 .PHONY : clean
 clean :
