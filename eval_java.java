@@ -29,6 +29,7 @@ public class eval_java {
 				imports.add("java.net.*");
 				imports.add("java.nio.file.*");
 				imports.add("java.util.*");
+				imports.add("java.util.regex.*");
 				imports.add("static lib.util.*");
 				String fromEnv = System.getenv("IMPORTS");
 				if (fromEnv != null)
