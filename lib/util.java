@@ -172,6 +172,10 @@ public class util {
 		copy(src, dest);
 	}
 
+	public static void cp(List<File> files, File dest) throws FileNotFoundException, IOException {
+		copy(files, dest);
+	}
+
 	public static void cp(URL url, File file) throws FileNotFoundException, IOException {
 		copy(url, file);
 	}
@@ -222,6 +226,11 @@ public class util {
 		     OutputStream os = new FileOutputStream(dest)) {
 			copy(is, os);
 		}
+	}
+
+	public static void copy(List<File> files, File dest) throws FileNotFoundException, IOException {
+		for (File f : files)
+			copy(f, dest);
 	}
 
 	public static void copy(URL url, File file) throws FileNotFoundException, IOException {
