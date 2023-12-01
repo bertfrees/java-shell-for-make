@@ -1,6 +1,21 @@
 .PHONY : all
 all : eval-java eval-java.exe eval_java.class lib/util.class lib/util$$OS.class lib/util$$1.class
 
+help :
+	@err.println(                                                                                    \
+	    "make:"                                                                             + "\n" + \
+	    "    Compile all sources"                                                           + "\n" + \
+	    "make dist:"                                                                        + "\n" + \
+	    "make tarball:"                                                                     + "\n" + \
+	    "    Package everything in a .tar.gz file"                                          + "\n" + \
+	    "make update-bootstrap:"                                                            + "\n" + \
+	    "    Update the bootstrap/ directory to the current version of java-shell-for-make" + "\n" + \
+	    "make clean:"                                                                       + "\n" + \
+	    "    Delete all generated files"                                                    + "\n" + \
+	    "make help:"                                                                        + "\n" + \
+	    "    Print list of commands"                                                                 \
+	);
+
 .PHONY : dist
 dist : tarball
 
