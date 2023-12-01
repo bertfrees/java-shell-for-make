@@ -1,5 +1,5 @@
 .PHONY : all
-all : eval-java eval-java.exe eval_java.class lib/util.class lib/util$$OS.class lib/util$$1.class
+all : eval-java eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
 
 help :
 	@err.println(                                                                                    \
@@ -21,9 +21,12 @@ dist : tarball
 
 include bootstrap/enable-java-shell.mk
 
+LIBS = $(shell println(glob("lib/*.jar").stream().map(File::getPath).collect(Collectors.joining(" ")));)
+
 # Java >= 8 is required to compile util
-eval_java.class lib/util.class : %.class : %.java
-	javac("-source", "1.8", "-target", "1.8", "-bootclasspath", "rt8.jar", "-extdirs", "", "$<");
+eval_java.class lib/lib/util.class : %.class : %.java
+	javac("-source", "1.8", "-target", "1.8", "-bootclasspath", "rt8.jar", "-extdirs", "", \
+	      "-cp", "$(LIBS)".replaceAll("\\s", File.pathSeparator), "$<");
 
 eval-java : eval-java.c
 	exec("cc", "$<", "-o", "$@");
@@ -35,7 +38,7 @@ TARBALL := $(notdir $(CURDIR)).tar.gz
 
 .PHONY : tarball
 tarball : $(TARBALL)
-$(TARBALL) : enable-java-shell.mk eval-java eval-java.exe eval_java.class lib/util.class lib/util$$OS.class lib/util$$1.class .gitignore
+$(TARBALL) : enable-java-shell.mk eval-java eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class .gitignore $(LIBS)
 	List<String> cmd = new ArrayList<>();          \
 	cmd.add("tar");                                \
 	cmd.add("-czvf");                              \
@@ -51,11 +54,9 @@ update-bootstrap : $(TARBALL)
 
 .PHONY : clean
 clean :
-	rm("eval_java.class");      \
-	rm("lib/util.class");       \
-	rm("lib/util$$OS.class");   \
-	rm("lib/util$$1.class");    \
-	rm("eval-java");            \
-	rm("eval-java.exe");        \
-	rm("bootstrap/recipes");    \
+	rm("eval_java.class");                       \
+	for (File f : glob("lib/**/*.class")) rm(f); \
+	rm("eval-java");                             \
+	rm("eval-java.exe");                         \
+	rm("bootstrap/recipes");                     \
 	rm("$(TARBALL)");

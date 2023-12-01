@@ -49,7 +49,11 @@ public class eval_java {
 			File classesDir = new File(new File(thisExecutable.getParentFile(), "recipes/classes"), "" + getJavaVersion());
 			File classFile = new File(classesDir, className + ".class");
 			List<File> classPath = new ArrayList<>(); {
-				classPath.add(thisExecutable.getParentFile());
+				File libDir = new File(thisExecutable.getParentFile(), "lib");
+				classPath.add(libDir);
+				for (File f : libDir.listFiles())
+					if (f.getName().endsWith(".jar"))
+						classPath.add(f);
 				classPath.add(classesDir);
 				String fromEnv = System.getenv("CLASSPATH");
 				if (fromEnv != null)

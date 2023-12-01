@@ -33,6 +33,9 @@ import java.util.zip.ZipInputStream;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import jline.ConsoleOperations;
+import jline.ConsoleReader;
+
 import org.xml.sax.InputSource;
 
 public class util {
@@ -492,5 +495,56 @@ public class util {
 			}
 		});
 		return list;
+	}
+
+	/**
+	 * @return the index of the option that the user chooses, or {@code -1}.
+	 * @throw IllegalArgumentException if {@code options} is empty
+	 * @throw IOException              if the prompt was cancelled by the user
+	 */
+	public static int prompt(String... options) throws IllegalArgumentException, IOException {
+		ConsoleReader console = new ConsoleReader();
+		if (options.length == 0)
+			throw new IllegalArgumentException();
+		int choice = 0;
+		choose: for (;;) {
+			for (int i = 0; i < options.length; i++) {
+				if (i == choice)
+					System.err.println("\033[7m" + options[i] + "\033[27m");
+				else
+					System.err.println(options[i]);
+			}
+			switch (console.readVirtualKey()) {
+			case ConsoleOperations.CTRL_P: // UP
+			case ConsoleOperations.CTRL_B: // LEFT
+				if (choice > 0)
+					choice--;
+				break;
+			case ConsoleOperations.CTRL_F: // RIGHT
+			case ConsoleOperations.CTRL_N: // DOWN
+				if (choice < options.length - 1)
+					choice++;
+				break;
+			case 9:                        // TAB
+				if (choice == options.length - 1)
+					choice = 0;
+				else
+					choice++;
+				break;
+			case 10:                       // ENTER
+			case ConsoleOperations.NEWLINE:
+				break choose;
+			case ConsoleOperations.EXIT:
+				throw new IOException("prompt cancelled by user");
+			}
+			System.err.print("\033[F");
+			for (int i = 0; i < options.length; i++) System.err.print("\033[A");
+			System.err.println();
+		}
+		return choice;
+	}
+
+	public static int prompt(List<String> options) throws IllegalArgumentException, IOException {
+		return prompt(options.toArray(new String[options.size()]));
 	}
 }
