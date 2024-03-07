@@ -1,5 +1,5 @@
 .PHONY : all
-all : eval-java eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
+all : bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
 
 help :
 	@err.println(                                                                                    \
@@ -28,17 +28,30 @@ eval_java.class lib/lib/util.class : %.class : %.java
 	javac("-source", "1.8", "-target", "1.8", "-bootclasspath", "rt8.jar", "-extdirs", "", \
 	      "-cp", "$(LIBS)".replaceAll("\\s", File.pathSeparator), "$<");
 
-eval-java : eval-java.c
+bin/darwin_amd64/eval-java : eval-java.c
+	mkdirs("$(dir $@)");          \
 	exec("cc", "$<", "-o", "$@");
 
-eval-java.exe : eval-java.c
+bin/linux_amd64/eval-java : eval-java.c
+	mkdirs("$(dir $@)");                        \
+	rm("$@");                                   \
+	exec("docker", "run", "-it", "--rm",        \
+	      "-v", "$(CURDIR):/host",              \
+	      "debian:bookworm", "bash", "-c",      \
+	     "apt update && " +                     \
+	     "apt install build-essential -y && " + \
+	     "cd /host &&" +                        \
+	     "cc $< -o $@");
+
+bin/windows_amd64/eval-java.exe : eval-java.c
+	mkdirs("$(dir $@)");                             \
 	exec("i686-w64-mingw32-gcc", "$<", "-o", "$@");
 
 TARBALL := $(notdir $(CURDIR)).tar.gz
 
 .PHONY : tarball
 tarball : $(TARBALL)
-$(TARBALL) : enable-java-shell.mk eval-java eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class .gitignore $(LIBS)
+$(TARBALL) : enable-java-shell.mk bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class .gitignore $(LIBS)
 	List<String> cmd = new ArrayList<>();          \
 	cmd.add("tar");                                \
 	cmd.add("-czvf");                              \
@@ -56,7 +69,8 @@ update-bootstrap : $(TARBALL)
 clean :
 	rm("eval_java.class");                       \
 	for (File f : glob("lib/**/*.class")) rm(f); \
-	rm("eval-java");                             \
-	rm("eval-java.exe");                         \
+	rm("bin/darwin_amd64/eval-java");            \
+	rm("bin/linux_amd64/eval-java");             \
+	rm("bin/windows_amd64/eval-java.exe");       \
 	rm("bootstrap/recipes");                     \
 	rm("$(TARBALL)");

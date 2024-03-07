@@ -45,11 +45,12 @@ public class eval_java {
 				javaCode);
 			String className = "recipe_" + md5(javaCode);
 			javaCode = javaCode.replace("[CLASSNAME]", className);
-			File javaDir = new File(thisExecutable.getParentFile(), "recipes/java");
-			File classesDir = new File(new File(thisExecutable.getParentFile(), "recipes/classes"), "" + getJavaVersion());
+			File baseDir = thisExecutable.getParentFile().getParentFile().getParentFile();
+			File javaDir = new File(baseDir, "recipes/java");
+			File classesDir = new File(new File(baseDir, "recipes/classes"), "" + getJavaVersion());
 			File classFile = new File(classesDir, className + ".class");
 			List<File> classPath = new ArrayList<>(); {
-				File libDir = new File(thisExecutable.getParentFile(), "lib");
+				File libDir = new File(baseDir, "lib");
 				classPath.add(libDir);
 				for (File f : libDir.listFiles())
 					if (f.getName().endsWith(".jar"))

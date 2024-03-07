@@ -43,10 +43,10 @@ char *quote(char *string) {
 #endif
 
 void exec_java(char *this_executable, char *java_executable, char *java_code) {
-	char *classpath = malloc(strlen(this_executable) + strlen("/..") + 1);
+	char *classpath = malloc(strlen(this_executable) + strlen("/../../..") + 1);
 	*classpath = '\0';
 	strcat(classpath, this_executable);
-	strcat(classpath, "/..");
+	strcat(classpath, "/../../..");
 #ifdef _WIN32
 	// because of how spawnvp works we need to quote the arguments
 	// (see https://docs.microsoft.com/en-us/cpp/c-runtime-library/spawn-wspawn-functions)
