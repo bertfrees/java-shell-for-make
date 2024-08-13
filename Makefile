@@ -1,5 +1,13 @@
+UNAME_P := $(shell uname -p)
+
 .PHONY : all
-all : bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
+all : bin/linux_arm64/eval-java eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
+ifeq ($(UNAME_P),x86_64)
+all : bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe
+endif
+ifneq ($(filter arm%,$(UNAME_P)),)
+all : bin/darwin_arm64/eval-java bin/linux_arm64/eval-java
+endif
 
 help :
 	@err.println(                                                                                    \
@@ -28,6 +36,8 @@ eval_java.class lib/lib/util.class : %.class : %.java
 	javac("-source", "1.8", "-target", "1.8", "-bootclasspath", "rt8.jar", "-extdirs", "", \
 	      "-cp", "$(LIBS)".replaceAll("\\s", File.pathSeparator), "$<");
 
+ifeq ($(UNAME_P),x86_64)
+
 bin/darwin_amd64/eval-java : eval-java.c
 	mkdirs("$(dir $@)");          \
 	exec("cc", "$<", "-o", "$@");
@@ -47,11 +57,33 @@ bin/windows_amd64/eval-java.exe : eval-java.c
 	mkdirs("$(dir $@)");                             \
 	exec("i686-w64-mingw32-gcc", "$<", "-o", "$@");
 
+endif
+
+ifneq ($(filter arm%,$(UNAME_P)),)
+
+bin/darwin_arm64/eval-java : eval-java.c
+	mkdirs("$(dir $@)");          \
+	exec("cc", "$<", "-o", "$@");
+
+bin/linux_arm64/eval-java : eval-java.c
+	mkdirs("$(dir $@)");                        \
+	rm("$@");                                   \
+	exec("docker", "run", "-it", "--rm",        \
+	      "-v", "$(CURDIR):/host",              \
+	      "debian:bookworm", "bash", "-c",      \
+	     "apt update && " +                     \
+	     "apt install build-essential -y && " + \
+	     "cd /host &&" +                        \
+	     "cc $< -o $@");
+
+endif
+
 TARBALL := $(notdir $(CURDIR)).tar.gz
 
 .PHONY : tarball
 tarball : $(TARBALL)
-$(TARBALL) : enable-java-shell.mk bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class .gitignore $(LIBS)
+$(TARBALL) : enable-java-shell.mk bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe bin/darwin_arm64/eval-java bin/linux_arm64/eval-java \
+             eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class .gitignore $(LIBS)
 	List<String> cmd = new ArrayList<>();          \
 	cmd.add("tar");                                \
 	cmd.add("-czvf");                              \
@@ -72,5 +104,7 @@ clean :
 	rm("bin/darwin_amd64/eval-java");            \
 	rm("bin/linux_amd64/eval-java");             \
 	rm("bin/windows_amd64/eval-java.exe");       \
+	rm("bin/darwin_arm64/eval-java");            \
+	rm("bin/linux_arm64/eval-java");             \
 	rm("bootstrap/recipes");                     \
 	rm("$(TARBALL)");
