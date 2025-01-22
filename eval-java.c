@@ -99,6 +99,9 @@ void exec_java(char *this_executable, char *java_executable, char *java_code) {
 
 int main(int argc, char **argv) {
 	char *this_executable_path = argv[0];
+	if (argc == 2 && strcmp(argv[1], "--verify") == 0)
+		// just checking that the binary can be executed on the current platform
+		exit(EXIT_SUCCESS);
 	char *java_code = argv[1];
 	char *JAVA_HOME = getenv("JAVA_HOME");
 	if (JAVA_HOME) {

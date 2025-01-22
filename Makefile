@@ -1,4 +1,4 @@
-UNAME_P := $(shell uname -p)
+UNAME_P := $(shell uname -m)
 
 .PHONY : all
 all : bin/linux_arm64/eval-java eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
@@ -82,7 +82,8 @@ TARBALL := $(notdir $(CURDIR)).tar.gz
 
 .PHONY : tarball
 tarball : $(TARBALL)
-$(TARBALL) : enable-java-shell.mk bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe bin/darwin_arm64/eval-java bin/linux_arm64/eval-java \
+$(TARBALL) : enable-java-shell.mk eval-java.c \
+             bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe bin/darwin_arm64/eval-java bin/linux_arm64/eval-java \
              eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class .gitignore $(LIBS)
 	List<String> cmd = new ArrayList<>();          \
 	cmd.add("tar");                                \
