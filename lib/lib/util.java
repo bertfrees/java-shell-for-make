@@ -9,8 +9,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -27,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -503,6 +506,25 @@ public class util {
 			}
 		});
 		return list;
+	}
+
+	/**
+	 * @param search a regular expression
+	 */
+	public static Stream<String> egrep(String search, String file) throws IOException {
+		return egrep(search, new File(file));
+	}
+
+	public static Stream<String> egrep(String search, File file) throws IOException {
+		return egrep(Pattern.compile(search), new FileReader(file));
+	}
+
+	public static Stream<String> egrep(String search, InputStream input) throws IOException {
+		return egrep(Pattern.compile(search), new InputStreamReader(input));
+	}
+
+	public static Stream<String> egrep(Pattern search, Reader input) throws IOException {
+		return new BufferedReader(input).lines().filter(line -> search.matcher(line).find());
 	}
 
 	/**
