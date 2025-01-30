@@ -46,3 +46,11 @@ $(error Java 8 is required to run this script)
 endif
 
 OS := $(shell println(getOS());)
+
+# utility function for helping with the migration from bash to java shell
+define \n
+
+
+endef
+quote-for-java = "$(subst ${\n},\n,$(subst ",\",$(subst \,\\,$(1))))"
+bash = exec("bash", "-c", $(call quote-for-java,$1));
