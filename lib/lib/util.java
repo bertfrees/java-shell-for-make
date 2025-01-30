@@ -258,6 +258,14 @@ public class util {
 			dest.write(data, 0, read);
 	}
 
+	public static void touch(String file) {
+		touch(new File(file));
+	}
+
+	public static void touch(File file) {
+		file.setLastModified(System.currentTimeMillis());
+	}
+
 	public static void write(File file, String string) throws IOException {
 		if (Files.isSymbolicLink(file.toPath())) {
 			System.err.println("file is a symbolic link: " + file);
