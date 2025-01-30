@@ -35,7 +35,10 @@ public class eval_java {
 				String fromEnv = System.getenv("IMPORTS");
 				if (fromEnv != null)
 					for (String i : fromEnv.split("\\s+"))
-						imports.add(i); }
+						imports.add(i);
+				if ((fromEnv = System.getenv("STATIC_IMPORTS")) != null)
+				    for (String i : fromEnv.split("\\s+"))
+					    imports.add("static " + i); }
 			javaCode = Pattern.compile(" *\\\\$", Pattern.MULTILINE).matcher(javaCode).replaceAll("");
 			javaCode = String.format(
 				"%s\n\n" +
