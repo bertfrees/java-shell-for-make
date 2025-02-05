@@ -41,7 +41,8 @@ endif
 CLASSPATH :=
 IMPORTS :=
 STATIC_IMPORTS :=
-unexport CLASSPATH IMPORTS STATIC_IMPORTS
+JAVA_REPL_PORT :=
+unexport CLASSPATH IMPORTS STATIC_IMPORTS JAVA_REPL_PORT
 
 JAVA_VERSION := $(shell println(getJavaVersion());)
 
@@ -53,6 +54,18 @@ $(error Java 8 is required to run this script)
 endif
 
 OS := $(shell println(getOS());)
+
+ifneq ($(OS), WINDOWS)
+export JAVA_REPL_KILL_AFTER_IDLE := 10
+# The following is not enabled by default, because starting the server
+# now means that any changes to environment variables after the
+# include of enable-java-shell.mk will not be noticed by
+# java-eval. This includes the environment variables JAVA_HOME, IMPORTS
+# and STATIC_IMPORTS, and any other environment variables used by a
+# recipe. Users may optionally include this line in their Makefile, at
+# a position of their liking.
+#export JAVA_REPL_PORT := $(shell --spawn-repl-server)
+endif
 
 # utility function for helping with the migration from bash to java shell
 define \n

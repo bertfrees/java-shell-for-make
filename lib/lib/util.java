@@ -28,6 +28,11 @@ import java.util.function.Consumer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -48,20 +53,20 @@ public class util {
 		System.out.println(o);
 	}
 
-	public static void exit(int exitValue) {
-		System.exit(exitValue);
+	public static void exit(int exitValue) throws SystemExit {
+		throw new SystemExit(exitValue);
 	}
 
-	public static void exit(boolean succeeded) {
+	public static void exit(boolean succeeded) throws SystemExit {
 		exit(succeeded ? 0 : 1);
 	}
 
-	public static void exitOnError(int exitValue) {
+	public static void exitOnError(int exitValue) throws SystemExit {
 		if (exitValue != 0)
 			exit(exitValue);
 	}
 
-	public static void exitOnError(boolean succeeded) {
+	public static void exitOnError(boolean succeeded) throws SystemExit {
 		if (!succeeded)
 			exit(succeeded);
 	}
@@ -122,7 +127,7 @@ public class util {
 		}
 	}
 
-	public static void mv(String src, String dest) throws IOException {
+	public static void mv(String src, String dest) throws IOException, SystemExit {
 		File srcFile = new File(src);
 		File destFile = new File(dest);
 		if (dest.endsWith("/"))
@@ -139,7 +144,7 @@ public class util {
 		mv(srcFile, destFile);
 	}
 
-	public static void mv(File src, File dest) throws IOException {
+	public static void mv(File src, File dest) throws IOException, SystemExit {
 		if (!(Files.isSymbolicLink(src.toPath()) || src.exists())) {
 			System.err.println("file does not exist: " + src);
 			exit(1);
@@ -170,19 +175,19 @@ public class util {
 			throw new RuntimeException("could not rename file: " + src + " -> " + dest);
 	}
 
-	public static void cp(String src, String dest) throws FileNotFoundException, IOException {
+	public static void cp(String src, String dest) throws FileNotFoundException, IOException, SystemExit {
 		copy(src, dest);
 	}
 
-	public static void cp(File src, File dest) throws FileNotFoundException, IOException {
+	public static void cp(File src, File dest) throws FileNotFoundException, IOException, SystemExit {
 		copy(src, dest);
 	}
 
-	public static void cp(List<File> files, File dest) throws FileNotFoundException, IOException {
+	public static void cp(List<File> files, File dest) throws FileNotFoundException, IOException, SystemExit {
 		copy(files, dest);
 	}
 
-	public static void cp(URL url, File file) throws FileNotFoundException, IOException {
+	public static void cp(URL url, File file) throws FileNotFoundException, IOException, SystemExit {
 		copy(url, file);
 	}
 
@@ -190,7 +195,7 @@ public class util {
 		copy(src, dest);
 	}
 
-	public static void copy(String src, String dest) throws FileNotFoundException, IOException {
+	public static void copy(String src, String dest) throws FileNotFoundException, IOException, SystemExit {
 		File srcFile = new File(src);
 		File destFile = new File(dest);
 		if (dest.endsWith("/"))
@@ -207,7 +212,7 @@ public class util {
 		copy(srcFile, destFile);
 	}
 
-	public static void copy(File src, File dest) throws FileNotFoundException, IOException {
+	public static void copy(File src, File dest) throws FileNotFoundException, IOException, SystemExit {
 		if (!(Files.isSymbolicLink(src.toPath()) || src.exists())) {
 			System.err.println("file does not exist: " + src);
 			exit(1);
@@ -234,12 +239,12 @@ public class util {
 		}
 	}
 
-	public static void copy(List<File> files, File dest) throws FileNotFoundException, IOException {
+	public static void copy(List<File> files, File dest) throws FileNotFoundException, IOException, SystemExit {
 		for (File f : files)
 			copy(f, dest);
 	}
 
-	public static void copy(URL url, File file) throws FileNotFoundException, IOException {
+	public static void copy(URL url, File file) throws FileNotFoundException, IOException, SystemExit {
 		if (Files.isSymbolicLink(file.toPath()) || file.exists()) {
 			System.err.println("file exists: " + file);
 			exit(1);
@@ -269,7 +274,7 @@ public class util {
 		file.setLastModified(System.currentTimeMillis());
 	}
 
-	public static void write(File file, String string) throws IOException {
+	public static void write(File file, String string) throws IOException, SystemExit {
 		if (Files.isSymbolicLink(file.toPath())) {
 			System.err.println("file is a symbolic link: " + file);
 			exit(1);
@@ -288,7 +293,7 @@ public class util {
 		}
 	}
 
-	public static void unzip(File zipFile, File directory) throws IOException {
+	public static void unzip(File zipFile, File directory) throws IOException, SystemExit {
 		if (Files.isSymbolicLink(directory.toPath())) {
 			System.err.println("file is not a directory: " + directory);
 			exit(1);
@@ -322,43 +327,69 @@ public class util {
 		}
 	}
 
-	public static void exec(String... cmd) throws IOException, InterruptedException {
+	public static void exec(String... cmd) throws IOException, InterruptedException, SystemExit {
 		exec(null, null, cmd);
 	}
 
-	public static void exec(List<String> cmd) throws IOException, InterruptedException {
+	public static void exec(List<String> cmd) throws IOException, InterruptedException, SystemExit {
 		exec(null, null, cmd.toArray(new String[cmd.size()]));
 	}
 
-	public static void exec(File cd, String... cmd) throws IOException, InterruptedException {
+	public static void exec(File cd, String... cmd) throws IOException, InterruptedException, SystemExit {
 		exec(cd, null, cmd);
 	}
 
-	public static void exec(File cd, List<String> cmd) throws IOException, InterruptedException {
+	public static void exec(File cd, List<String> cmd) throws IOException, InterruptedException, SystemExit {
 		exec(cd, null, cmd.toArray(new String[cmd.size()]));
 	}
 
-	public static void exec(Map<String,String> env, String... cmd) throws IOException, InterruptedException {
+	public static void exec(Map<String,String> env, String... cmd) throws IOException, InterruptedException, SystemExit {
 		exec(null, env, cmd);
 	}
 
-	public static void exec(File cd, Map<String,String> env, List<String> cmd) throws IOException, InterruptedException {
+	public static void exec(File cd, Map<String,String> env, List<String> cmd) throws IOException, InterruptedException, SystemExit {
 		exec(cd, env, cmd.toArray(new String[cmd.size()]));
 	}
 
-	public static void exec(File cd, Map<String,String> env, String... cmd) throws IOException, InterruptedException {
-		ProcessBuilder b = new ProcessBuilder(cmd).redirectInput(ProcessBuilder.Redirect.INHERIT)
-		                                          .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-		                                          .redirectError(ProcessBuilder.Redirect.INHERIT);
+	public static void exec(File cd, Map<String,String> env, String... cmd) throws IOException, InterruptedException, SystemExit {
+		ProcessBuilder b = new ProcessBuilder(cmd);
+		// this only makes sense when not evaluated through the REPL server
+		b.redirectInput(ProcessBuilder.Redirect.INHERIT);
 		if (cd != null)
 			b = b.directory(cd);
 		if (env != null)
 			for (String v : env.keySet())
 				b.environment().put(v, env.get(v));
-		int rv = b.start().waitFor();
+		Process p = b.start();
+		// Don't use inheritIO() because that will set the source and destination for the subprocess
+		// standard I/O to be the same as those of the current Java process, which is not always the
+		// same as System.{in,out,err}.
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		CompletionService<Void> completionService =
+			new ExecutorCompletionService<Void>(executor);
+		completionService.submit(() -> { copy(p.getInputStream(), System.out); return null; });
+		completionService.submit(() -> { copy(p.getErrorStream(), System.err); return null; });
+		try {
+			for (int done = 0; done < 2; done++)
+				completionService.take().get();
+		} catch (ExecutionException e) {
+			Throwable t = e;
+			while (t instanceof ExecutionException) t = ((ExecutionException)t).getCause();
+			if (t instanceof IOException)
+				// can be thrown by copy()
+				throw (IOException)t;
+			else if (t instanceof RuntimeException)
+				throw (RuntimeException)t;
+			else
+				// should not happen
+				throw new RuntimeException(t);
+		} finally {
+			executor.shutdownNow();
+		}
+		int rv = p.waitFor();
 		System.out.flush();
 		System.err.flush();
-		System.exit(rv);
+		exit(rv);
 	}
 
 	public static Map<String,String> env(String... variables) {
@@ -402,18 +433,42 @@ public class util {
 	}
 
 	public static int captureOutput(Consumer<String> collect, File cd, Map<String,String> env, String... cmd) throws IOException, InterruptedException {
-		ProcessBuilder b = new ProcessBuilder(cmd).redirectError(ProcessBuilder.Redirect.INHERIT);
+		ProcessBuilder b = new ProcessBuilder(cmd);
+		// this only makes sense when not evaluated through the REPL server
+		b.redirectInput(ProcessBuilder.Redirect.INHERIT);
 		if (cd != null)
 			b = b.directory(cd);
 		if (env != null)
 			for (String v : env.keySet())
 				b.environment().put(v, env.get(v));
 		Process p = b.start();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-		String line;
-		while ((line = reader.readLine()) != null)
-			if (collect != null)
-				collect.accept(line);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		CompletionService<Void> completionService =
+			new ExecutorCompletionService<Void>(executor);
+		completionService.submit(() -> { copy(p.getErrorStream(), System.err); return null; });
+		completionService.submit(() -> {
+				BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				while ((line = reader.readLine()) != null)
+					if (collect != null)
+						collect.accept(line);
+				return null; });
+		try {
+			for (int done = 0; done < 2; done++)
+				completionService.take().get();
+		} catch (ExecutionException e) {
+			Throwable t = e;
+			while (t instanceof ExecutionException) t = ((ExecutionException)t).getCause();
+			if (t instanceof IOException)
+				throw (IOException)t;
+			else if (t instanceof RuntimeException)
+				throw (RuntimeException)t;
+			else
+				// should not happen
+				throw new RuntimeException(t);
+		} finally {
+			executor.shutdownNow();
+		}
 		int rv = p.waitFor();
 		System.err.flush();
 		return rv;
@@ -443,7 +498,7 @@ public class util {
 		}
 	}
 
-	public static void javac(String... cmd) throws IOException, InterruptedException {
+	public static void javac(String... cmd) throws IOException, InterruptedException, SystemExit {
 		String javac = getOS() == OS.WINDOWS ? "javac.exe" : "javac";
 		String JAVA_HOME = System.getenv("JAVA_HOME");
 		if (JAVA_HOME != null) {
@@ -576,5 +631,13 @@ public class util {
 
 	public static int prompt(List<String> options) throws IllegalArgumentException, IOException {
 		return prompt(options.toArray(new String[options.size()]));
+	}
+
+	public static final class SystemExit extends RuntimeException {
+		private final int exitValue;
+		private SystemExit(int exitValue) {
+			super();
+			this.exitValue = exitValue;
+		}
 	}
 }
