@@ -7,7 +7,7 @@ EVAL_JAVA := $(dir $(lastword $(MAKEFILE_LIST)))bin/windows_amd64/eval-java.exe
 SHELL := $(EVAL_JAVA)
 else
 UNAME_S := $(shell uname -s)
-UNAME_P := $(shell uname -p)
+UNAME_P := $(shell uname -m)
 ifeq ($(UNAME_S),Darwin)
 ifneq ($(filter arm%,$(UNAME_P))$(filter aarch%,$(UNAME_P)),)
 EVAL_JAVA := $(dir $(lastword $(MAKEFILE_LIST)))bin/darwin_arm64/eval-java
