@@ -359,7 +359,10 @@ public class util {
 			b = b.directory(cd);
 		if (env != null)
 			for (String v : env.keySet())
-				b.environment().put(v, env.get(v));
+				if (env.get(v) != null)
+					b.environment().put(v, env.get(v));
+				else
+					b.environment().remove(v);
 		Process p = b.start();
 		// Don't use inheritIO() because that will set the source and destination for the subprocess
 		// standard I/O to be the same as those of the current Java process, which is not always the
@@ -396,11 +399,11 @@ public class util {
 		Map<String,String> env = new HashMap<>();
 		String var = null;
 		for (String s : variables) {
-			if (s == null)
-				throw new RuntimeException();
 			if (var != null) {
 				env.put(var, s);
 				var = null; }
+			else if (s == null)
+				throw new RuntimeException();
 			else
 				var = s; }
 		if (var != null)
