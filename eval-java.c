@@ -45,15 +45,27 @@ char *quote(char *string) {
 #define PATH_SEPARATOR ':'
 #endif
 
-void exec_java(char *this_executable, char *java_executable, char *java_code) {
+void exec_java(char *this_executable, char *java_executable, char *java_code, int argc, char **argv) {
 	char *classpath = malloc(strlen(this_executable) + strlen("/../../..") + 1);
 	*classpath = '\0';
 	strcat(classpath, this_executable);
 	strcat(classpath, "/../../..");
+	char **java_argv = malloc((7 + argc) * sizeof (char *));
+	int i = 0;
+	java_argv[i++] = java_executable;
+	java_argv[i++] = "-classpath";
+	java_argv[i++] = classpath;
+	java_argv[i++] = "eval_java";
+	java_argv[i++] = this_executable;
+	java_argv[i++] = java_code;
+	for (int j = 0; j < argc; j++)
+		java_argv[i++] = argv[j];
+	java_argv[i] = NULL;
 #ifdef _WIN32
 	// because of how spawnvp works we need to quote the arguments
 	// (see https://docs.microsoft.com/en-us/cpp/c-runtime-library/spawn-wspawn-functions)
-	char *java_argv[7] = { quote(java_executable), "-classpath", classpath, "eval_java", quote(this_executable), quote(java_code), NULL };
+	for (i = 0; java_argv[i]; i++)
+		java_argv[i] = quote(java_argv[i]);
 	int child_status = spawnvp(P_WAIT, java_executable, java_argv);
 	if (child_status == -1) {
 		fprintf(stderr, "%s: error running command `%s' (%s)\n", this_executable, java_executable, strerror(errno));
@@ -61,7 +73,6 @@ void exec_java(char *this_executable, char *java_executable, char *java_code) {
 	}
 	exit(child_status);
 #else
-	char *java_argv[7] = { java_executable, "-classpath", classpath, "eval_java", this_executable, java_code, NULL };
 	pid_t child_pid;
 	pid_t w;
 	int child_status;
@@ -182,28 +193,40 @@ void exec_java_repl_client(char *this_executable, char *java_code, int port) {
 
 int main(int argc, char **argv) {
 	char *this_executable_path = argv[0];
-	if (argc != 2) {
-		fprintf(stderr, "%s: expected single argument\n", argv[0]);
+	if (argc < 2) {
+		fprintf(stderr, "%s: expected at least one argument\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
-	if (strcmp(argv[1], "--verify") == 0)
+	if (argc == 2 && strcmp(argv[1], "--verify") == 0)
 		// just checking that the binary can be executed on the current platform
 		exit(EXIT_SUCCESS);
 	char *java_code = argv[1];
+	int extra_argc = 0;
+	char **extra_argv = NULL;
+	if (argc > 2) {
+		if (strcmp(argv[2], "--") != 0) {
+			fprintf(stderr, "%s: unexpected argument: %s\n", argv[0], argv[2]);
+			exit(EXIT_FAILURE);
+		}
+		extra_argc = argc - 3;
+		extra_argv = &argv[3];
+	}
 #ifndef _WIN32
-	char *JAVA_REPL_PORT = getenv("JAVA_REPL_PORT");
-	if (JAVA_REPL_PORT && *JAVA_REPL_PORT) {
-		// try to connect with REPL
-		intmax_t port = strtoimax(JAVA_REPL_PORT, NULL, 10);
-		if (errno) {
-			fprintf(stderr, "%s: could not parse JAVA_REPL_PORT: %s\n", this_executable_path, JAVA_REPL_PORT);
-			exit(EXIT_FAILURE);
+	if (extra_argc == 0) {
+		char *JAVA_REPL_PORT = getenv("JAVA_REPL_PORT");
+		if (JAVA_REPL_PORT && *JAVA_REPL_PORT) {
+			// try to connect with REPL
+			intmax_t port = strtoimax(JAVA_REPL_PORT, NULL, 10);
+			if (errno) {
+				fprintf(stderr, "%s: could not parse JAVA_REPL_PORT: %s\n", this_executable_path, JAVA_REPL_PORT);
+				exit(EXIT_FAILURE);
+			}
+			if (port < 0 || port > 65535) {
+				fprintf(stderr, "%s: not a valid port number: %jd\n", this_executable_path, port);
+				exit(EXIT_FAILURE);
+			}
+			exec_java_repl_client(this_executable_path, java_code, port);
 		}
-		if (port < 0 || port > 65535) {
-			fprintf(stderr, "%s: not a valid port number: %jd\n", this_executable_path, port);
-			exit(EXIT_FAILURE);
-		}
-		exec_java_repl_client(this_executable_path, java_code, port);
 	}
 #endif
 	char *JAVA_HOME = getenv("JAVA_HOME");
@@ -218,7 +241,7 @@ int main(int argc, char **argv) {
 		FILE *f;
 		if ((f = fopen(java, "r"))) {
 			fclose(f);
-			exec_java(this_executable_path, java, java_code);
+			exec_java(this_executable_path, java, java_code, extra_argc, extra_argv);
 		}
 		free(java);
 	}
@@ -239,7 +262,7 @@ int main(int argc, char **argv) {
 		FILE *f;
 		if ((f = fopen(java, "r"))) {
 			fclose(f);
-			exec_java(this_executable_path, java, java_code);
+			exec_java(this_executable_path, java, java_code, extra_argc, extra_argv);
 		}
 		free(java);
 		dir = sep ? sep + 1 : NULL;

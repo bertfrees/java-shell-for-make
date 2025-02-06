@@ -21,6 +21,7 @@ import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.Executors;
@@ -137,7 +138,7 @@ public class eval_java {
 					System.exit(repl());
 				} else {
 					// run one evaluation and return
-					int v = eval(args[1]);
+					int v = eval(args[1], Arrays.copyOfRange(args, 2, args.length));
 					if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
 						// start a REPL server if JAVA_REPL_PORT is set and port is available,
 						// so that the next `eval-java' call will be faster
@@ -166,11 +167,11 @@ public class eval_java {
 	private static List<File> classPath = null;
 	private static String javac = null;
 
-	private static int eval(CharSequence javaCode) {
+	private static int eval(CharSequence javaCode, String... commandLineArgs) {
 		return eval(javaCode.toString());
 	}
 
-	private static int eval(String javaCode) {
+	private static int eval(String javaCode, String... commandLineArgs) {
 		javaCode = javaCode.trim();
 		if (javaCode.isEmpty())
 			return 0;
@@ -197,7 +198,7 @@ public class eval_java {
 			javaCode = String.format(
 				"%s\n\n" +
 				"public class [CLASSNAME] {\n\n" +
-				"public static void main(String args[]) throws Throwable {\n\n%s\n\n}\n}\n",
+				"public static void main(String[] commandLineArgs) throws Throwable {\n\n%s\n\n}\n}\n",
 				"import " + String.join(";\nimport ", imports) + ";",
 				javaCode);
 			String className = "recipe_" + md5(javaCode);
@@ -257,7 +258,7 @@ public class eval_java {
 			Thread.currentThread().setContextClassLoader(classLoader);
 			Class.forName(className, true, classLoader)
 			     .getDeclaredMethod("main", String[].class)
-			     .invoke(null, (Object)new String[0]);
+			     .invoke(null, (Object)commandLineArgs);
 		} catch (Throwable e) {
 			if (e instanceof InvocationTargetException) {
 				e = ((InvocationTargetException)e).getTargetException();
