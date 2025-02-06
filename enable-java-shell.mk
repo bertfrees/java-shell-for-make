@@ -36,6 +36,13 @@ endif
 
 .SHELLFLAGS :=
 
+# Reset environment variables to avoid pass-through, when one Makefile
+# invokes make in another directory.
+CLASSPATH :=
+IMPORTS :=
+STATIC_IMPORTS :=
+unexport CLASSPATH IMPORTS STATIC_IMPORTS
+
 JAVA_VERSION := $(shell println(getJavaVersion());)
 
 ifeq ($(JAVA_VERSION),)

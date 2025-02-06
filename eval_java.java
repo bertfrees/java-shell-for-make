@@ -33,12 +33,12 @@ public class eval_java {
 				imports.add("java.util.stream.*");
 				imports.add("static lib.util.*");
 				String fromEnv = System.getenv("IMPORTS");
-				if (fromEnv != null)
-					for (String i : fromEnv.split("\\s+"))
+				if (fromEnv != null && !"".equals(fromEnv.trim()))
+					for (String i : fromEnv.trim().split("\\s+"))
 						imports.add(i);
-				if ((fromEnv = System.getenv("STATIC_IMPORTS")) != null)
-				    for (String i : fromEnv.split("\\s+"))
-					    imports.add("static " + i); }
+				if ((fromEnv = System.getenv("STATIC_IMPORTS")) != null && !"".equals(fromEnv.trim()))
+					for (String i : fromEnv.trim().split("\\s+"))
+						imports.add("static " + i); }
 			javaCode = Pattern.compile(" *\\\\$", Pattern.MULTILINE).matcher(javaCode).replaceAll("");
 			javaCode = String.format(
 				"%s\n\n" +
