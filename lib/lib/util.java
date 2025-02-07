@@ -411,6 +411,55 @@ public class util {
 		return env;
 	}
 
+	public static String[] cons(String... rest) {
+		return rest;
+	}
+
+	public static String[] cons(String a, String[] rest) {
+		String[] array = new String[1 + rest.length];
+		array[0] = a;
+		System.arraycopy(rest, 0, array, 1, rest.length);
+		return array;
+	}
+
+	public static String[] cons(String a, String b, String[] rest) {
+		String[] array = new String[2 + rest.length];
+		array[0] = a;
+		array[1] = b;
+		System.arraycopy(rest, 0, array, 2, rest.length);
+		return array;
+	}
+
+	public static String[] cons(String a, String b, String c, String[] rest) {
+		String[] array = new String[3 + rest.length];
+		array[0] = a;
+		array[1] = b;
+		array[2] = c;
+		System.arraycopy(rest, 0, array, 3, rest.length);
+		return array;
+	}
+
+	public static String[] cons(String a, String b, String c, String d, String[] rest) {
+		String[] array = new String[4 + rest.length];
+		array[0] = a;
+		array[1] = b;
+		array[2] = c;
+		array[3] = d;
+		System.arraycopy(rest, 0, array, 4, rest.length);
+		return array;
+	}
+
+	public static String[] cons(String a, String b, String c, String d, String e, String[] rest) {
+		String[] array = new String[5 + rest.length];
+		array[0] = a;
+		array[1] = b;
+		array[2] = c;
+		array[3] = d;
+		array[4] = e;
+		System.arraycopy(rest, 0, array, 5, rest.length);
+		return array;
+	}
+
 	public static int captureOutput(Consumer<String> collect, String... cmd) throws IOException, InterruptedException {
 		return captureOutput(collect, null, null, cmd);
 	}
