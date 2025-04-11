@@ -1,13 +1,12 @@
 UNAME_P := $(shell uname -m)
 
 .PHONY : all
-all : bin/linux_arm64/eval-java eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class
-ifeq ($(UNAME_P),x86_64)
-all : bin/darwin_amd64/eval-java bin/linux_amd64/eval-java bin/windows_amd64/eval-java.exe
-endif
-ifneq ($(filter arm%,$(UNAME_P)),)
-all : bin/darwin_arm64/eval-java bin/linux_arm64/eval-java
-endif
+all : eval_java.class lib/lib/util.class lib/lib/util$$OS.class lib/lib/util$$1.class \
+      bin/darwin_amd64/eval-java \
+      bin/darwin_arm64/eval-java \
+      bin/linux_amd64/eval-java \
+      bin/linux_arm64/eval-java \
+      bin/windows_amd64/eval-java.exe
 
 help :
 	@err.println(                                                                                    \
@@ -36,47 +35,98 @@ eval_java.class lib/lib/util.class : %.class : %.java
 	javac("-source", "1.8", "-target", "1.8", "-bootclasspath", "rt8.jar", "-extdirs", "", \
 	      "-cp", "$(LIBS)".replaceAll("\\s", File.pathSeparator), "$<");
 
+DOCKER_IMAGE_ := java-shell-for-make_debian_
+
+# can not use --platform linux/amd64,linux/arm64 (see https://github.com/docker/buildx/issues/59)
+.PHONY : docker-images
+docker-images :
+	List<String> images = new ArrayList<>(); { \
+		exitOnError( \
+			captureOutput(line -> { \
+				if (images.size() > 0 || !line.startsWith("REPOSITORY")) \
+					images.add(line.trim().split(" ")[0]); \
+			}, "docker", "images") \
+		); \
+	} \
+	if (!images.contains("$(DOCKER_IMAGE_)amd64") || !images.contains("$(DOCKER_IMAGE_)arm64")) { \
+		exitOnError(captureOutput(err::println, "docker", "buildx", "create", \
+		                                                  "--use", "--name=mybuilder", \
+		                                                  "--driver", "docker-container", \
+		                                                  "--driver-opt", "image=moby/buildkit:buildx-stable-1")); \
+		try { \
+			if (!images.contains("$(DOCKER_IMAGE_)amd64")) { \
+				exitOnError(captureOutput(err::println, "docker", "buildx", "build", "--platform", "linux/amd64", \
+				                                        "-t", "$(DOCKER_IMAGE_)amd64", \
+				                                        "--load", \
+				                                        "docker")); \
+			} \
+			if (!images.contains("$(DOCKER_IMAGE_)arm64")) { \
+				exitOnError(captureOutput(err::println, "docker", "buildx", "build", "--platform", "linux/arm64", \
+				                                        "-t", "$(DOCKER_IMAGE_)arm64", \
+				                                        "--load", \
+				                                        "docker")); \
+			} \
+		} finally { \
+			exitOnError(captureOutput(err::println, "docker", "buildx", "rm", "mybuilder")); \
+		} \
+	}
+
 ifeq ($(UNAME_P),x86_64)
 
 bin/darwin_amd64/eval-java : eval-java.c
 	mkdirs("$(dir $@)");          \
 	exec("cc", "$<", "-o", "$@");
 
-bin/linux_amd64/eval-java : eval-java.c
-	mkdirs("$(dir $@)");                        \
-	rm("$@");                                   \
-	exec("docker", "run", "-it", "--rm",        \
-	      "-v", "$(CURDIR):/host",              \
-	      "debian:bookworm", "bash", "-c",      \
-	     "apt update && " +                     \
-	     "apt install build-essential -y && " + \
-	     "cd /host &&" +                        \
-	     "cc $< -o $@");
-
 bin/windows_amd64/eval-java.exe : eval-java.c
 	mkdirs("$(dir $@)");                             \
 	exec("i686-w64-mingw32-gcc", "$<", "-o", "$@");
 
+else ifneq ($(filter arm%,$(UNAME_P)),)
+
+bin/darwin_amd64/eval-java : eval-java.c
+	mkdirs("$(dir $@)");          \
+	exec("cc", "$<", "-target", "x86_64-apple-macos10.12", "-o", "$@");
+
+bin/darwin_arm64/eval-java : eval-java.c bin/darwin_amd64/eval-java
+	mkdirs("$(dir $@)");          \
+	exec("cc", "$<", "-o", "$@.tmp");
+	exec("lipo", "-create", "-output", "$@", "$(word 2,$^)", "$@.tmp");
+	rm("$@.tmp");
+
+bin/windows_amd64/eval-java.exe : eval-java.c
+	exec("$(MAKE)", "docker-images");
+	mkdirs("$(dir $@)");                         \
+	rm("$@");                                    \
+	exec("docker", "run", "-it", "--rm",         \
+	     "--platform", "linux/amd64",            \
+	     "-v", "$(CURDIR):/host",                \
+	     "$(DOCKER_IMAGE_)amd64", "bash", "-c",  \
+	     "cd /host &&" +                         \
+	     "i686-w64-mingw32-gcc $< -o $@");
+
 endif
 
-ifneq ($(filter arm%,$(UNAME_P)),)
-
-bin/darwin_arm64/eval-java : eval-java.c
-	mkdirs("$(dir $@)");          \
-	exec("cc", "$<", "-o", "$@");
+bin/linux_amd64/eval-java : eval-java.c
+	exec("$(MAKE)", "docker-images");
+	mkdirs("$(dir $@)");                         \
+	rm("$@");                                    \
+	exec("docker", "run", "-it", "--rm",         \
+	     "--platform", "linux/amd64",            \
+	     "-v", "$(CURDIR):/host",                \
+	     "$(DOCKER_IMAGE_)amd64", "bash", "-c",  \
+	     "cd /host &&" +                         \
+	     "cc $< -o $@");
 
 bin/linux_arm64/eval-java : eval-java.c
+	exec("$(MAKE)", "docker-images");
 	mkdirs("$(dir $@)");                        \
 	rm("$@");                                   \
 	exec("docker", "run", "-it", "--rm",        \
-	      "-v", "$(CURDIR):/host",              \
-	      "debian:bookworm", "bash", "-c",      \
-	     "apt update && " +                     \
-	     "apt install build-essential -y && " + \
+	     "--platform", "linux/arm64",           \
+	     "-v", "$(CURDIR):/host",               \
+	     "$(DOCKER_IMAGE_)arm64", "bash", "-c", \
 	     "cd /host &&" +                        \
 	     "cc $< -o $@");
-
-endif
 
 TARBALL := $(notdir $(CURDIR)).tar.gz
 
