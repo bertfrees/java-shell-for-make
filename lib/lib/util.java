@@ -281,6 +281,14 @@ public class util {
 			file.setLastModified(System.currentTimeMillis());
 	}
 
+	public static String slurp(String file) throws IOException {
+		return slurp(new File(file));
+	}
+
+	public static String slurp(File file) throws IOException {
+		return new String(Files.readAllBytes(file.toPath()));
+	}
+
 	public static void write(File file, String string) throws IOException, SystemExit {
 		if (Files.isSymbolicLink(file.toPath())) {
 			System.err.println("file is a symbolic link: " + file);
