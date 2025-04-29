@@ -593,16 +593,21 @@ public class util {
 		Path base = cd;
 		String prefix = "";
 		List<File> list = new ArrayList<>();
-		if (pattern.startsWith("/")) {
+		String separator = getOS() == OS.WINDOWS
+			? (File.separator + File.separator)
+			: File.separator;
+		if (getOS() == OS.WINDOWS)
+			pattern = pattern.replace("/", separator);
+		if (pattern.startsWith("/")) { // *nix only
 			base = Paths.get("/");
 			prefix = "/";
 		} else {
-			while (pattern.startsWith("../")) {
+			while (pattern.startsWith(".." + separator)) {
 				base = base.getParent();
-				pattern = pattern.substring(3);
-				prefix += "../";
+				pattern = pattern.substring((".." + separator).length());
+				prefix += (".." + separator);
 			}
-			pattern = base + "/" + pattern;
+			pattern = base.toString().replace(File.separator, separator) + separator + pattern;
 		}
 		int cut = base.toFile().getPath().equals("/") ? 1 : base.toFile().getPath().length() + 1;
 		final String fPrefix = prefix;
