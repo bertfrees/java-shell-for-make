@@ -266,12 +266,19 @@ public class util {
 			dest.write(data, 0, read);
 	}
 
-	public static void touch(String file) {
+	public static void touch(String file) throws IOException, SystemExit {
 		touch(new File(file));
 	}
 
-	public static void touch(File file) {
-		file.setLastModified(System.currentTimeMillis());
+	public static void touch(File file) throws IOException, SystemExit {
+		if (!file.exists()) {
+			if (!file.getCanonicalFile().getParentFile().isDirectory()) {
+				System.err.println("directory does not exist: " + file.getCanonicalFile().getParentFile());
+				exit(1);
+			}
+			file.createNewFile();
+		} else
+			file.setLastModified(System.currentTimeMillis());
 	}
 
 	public static void write(File file, String string) throws IOException, SystemExit {
