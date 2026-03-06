@@ -115,15 +115,22 @@ public class util {
 	}
 
 	public static void rm(File fileOrDirectory) {
-		if (Files.isSymbolicLink(fileOrDirectory.toPath())) {
-			if (!fileOrDirectory.delete())
-				throw new RuntimeException("could not delete file: " + fileOrDirectory);
-		} else if (fileOrDirectory.exists()) {
+		Path path = fileOrDirectory.toPath();
+		if (Files.isSymbolicLink(path))
+			try {
+				Files.delete(path);
+			} catch (Exception e) {
+				throw new RuntimeException("could not delete file: " + fileOrDirectory, e);
+			}
+		else if (fileOrDirectory.exists()) {
 			if (fileOrDirectory.isDirectory())
 				for (File f : fileOrDirectory.listFiles())
 					rm(f);
-			if (!fileOrDirectory.delete())
-				throw new RuntimeException("could not delete file: " + fileOrDirectory);
+			try {
+				Files.delete(path);
+			} catch (Exception e) {
+				throw new RuntimeException("could not delete file: " + fileOrDirectory, e);
+			}
 		}
 	}
 
@@ -169,9 +176,12 @@ public class util {
 			dest.mkdirs();
 			for (File f : src.listFiles())
 				mv(f, dest);
-			if (!src.delete())
-				throw new RuntimeException("could not delete file: " + src); }
-		else if (!src.renameTo(dest))
+			try {
+				Files.delete(src.toPath());
+			} catch (Exception e) {
+				throw new RuntimeException("could not delete file: " + src, e);
+			}
+		} else if (!src.renameTo(dest))
 			throw new RuntimeException("could not rename file: " + src + " -> " + dest);
 	}
 
