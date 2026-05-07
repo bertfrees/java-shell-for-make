@@ -105,7 +105,7 @@ bin/windows_amd64/eval-java.exe : eval-java.c
 	     "-v", "$(CURDIR):/host",                \
 	     "$(DOCKER_IMAGE_)amd64", "bash", "-c",  \
 	     "cd /host &&" +                         \
-	     "i686-w64-mingw32-gcc $< -o $@");
+	     "i686-w64-mingw32-gcc $< -lws2_32 -o $@");
 
 endif
 
